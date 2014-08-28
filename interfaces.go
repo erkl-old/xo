@@ -35,3 +35,9 @@ type Writer interface {
 	// Flush writes all buffered data.
 	Flush() error
 }
+
+// ReadWriter combines the Reader and Writer interfaces.
+type ReadWriter interface {
+	Reader
+	Writer
+}
