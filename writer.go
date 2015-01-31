@@ -105,20 +105,18 @@ func (w *writer) write(buf []byte) (int, error) {
 		return 0, w.err
 	}
 
-	var n int
-
-	for n < len(buf) {
-		nw, err := w.wr.Write(buf[n:])
-		if nw > 0 {
-			n += nw
-		} else {
-			if err == nil {
-				err = io.ErrShortWrite
-			}
-			w.err = err
-			return n, err
-		}
+	n, err := w.wr.Write(buf)
+	if n < 0 {
+		n = 0
+	}
+	if err == nil && n < len(buf) {
+		err = io.ErrShortWrite
 	}
 
-	return n, nil
+	// Persist errors.
+	if err != nil {
+		w.err = err
+	}
+
+	return n, err
 }
