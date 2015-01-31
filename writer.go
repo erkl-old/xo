@@ -20,13 +20,12 @@ type writer struct {
 func (w *writer) Write(buf []byte) (int, error) {
 	var n int
 
-	// If the internal buffer contains any data already, write more
-	// data to it.
+	// If the internal buffer already has data in it, keep filling it up.
 	if w.n > 0 {
 		n = copy(w.buf[w.n:], buf)
 		w.n += n
 
-		// Flush the buffer if it's completely full.
+		// If the internal buffer is now full, flush it.
 		if w.n == len(w.buf) {
 			err := w.Flush()
 			if err != nil {
@@ -35,16 +34,21 @@ func (w *writer) Write(buf []byte) (int, error) {
 		}
 	}
 
-	// If the rest of the input won't fit in the internal buffer, write
-	// it straight to the underlying writer.
+	// Are we done already?
+	if n == len(buf) {
+		return n, nil
+	}
+
+	// If the remaining input fit in the internal buffer, simply copy it.
+	// Otherwise write it straight to the destination writer.
 	if len(buf)-n < len(w.buf) {
+		nc := copy(w.buf[w.n:], buf[n:])
+		w.n += nc
+		return n + nc, nil
+	} else {
 		nw, err := w.write(buf[n:])
 		return n + nw, err
 	}
-
-	nc := copy(w.buf[w.n:], buf)
-	w.n += nc
-	return n + nc, nil
 }
 
 func (w *writer) Reserve(n int) ([]byte, error) {
